@@ -1,55 +1,27 @@
-"use client";
+import { CSSProperties } from "react";
 
-import { useEffect, useState } from "react";
-import SbBb from "./sb-bb";
-
-export default function Timer({
-  initialTime,
-  beep,
-  initialSb,
-  maxSb,
-}: {
-  initialTime: number;
-  beep: boolean;
-  initialSb: number;
-  maxSb: number;
-}) {
-  const [timeLeft, setTimeLeft] = useState(initialTime);
-  const [sb, setSb] = useState(initialSb);
-
-  useEffect(() => {
-    if (timeLeft <= 0) {
-      if (beep) {
-        //const audio = new Audio("/beep.mp3");
-        //audio.play();
-      }
-      setTimeLeft(initialTime);
-      if (sb * 2 > maxSb) {
-        // Do nothing
-      } else {
-        setSb(sb * 2);
-      }
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft((prevTime) => prevTime - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft]);
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${String(minutes).padStart(2, "0")}:${String(
-      remainingSeconds
-    ).padStart(2, "0")}`;
-  };
+export default function Timer({ time }: { time: number }) {
+  const minutes = Math.floor(time / 60);
+  const remainingSeconds = time % 60;
 
   return (
-    <>
-      <time>{formatTime(timeLeft)}</time>
-      <SbBb sb={sb} />
-    </>
+    <div className="w-full flex flex-row justify-center">
+      <div className="grid grid-flow-col gap-5 text-center auto-cols-max">
+        <div className="flex flex-col">
+          <span className="countdown font-mono text-9xl">
+            <span style={{ "--value": `${minutes}` } as CSSProperties}></span>
+          </span>
+          min
+        </div>
+        <div className="flex flex-col">
+          <span className="countdown font-mono text-9xl">
+            <span
+              style={{ "--value": `${remainingSeconds}` } as CSSProperties}
+            ></span>
+          </span>
+          sec
+        </div>
+      </div>
+    </div>
   );
 }

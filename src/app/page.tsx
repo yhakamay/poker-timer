@@ -1,76 +1,76 @@
 "use client";
 
+import BlindLevel from "@/components/blind-level";
+import Footer from "@/components/footer";
+import SbBb from "@/components/sb-bb";
 import Timer from "@/components/timer";
-import type { TimerConfig } from "@/timer-config";
-import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Home() {
-  const [config, setConfig] = useState({
-    initialTime: 2,
-    initialSb: 200,
-    maxBb: 1600,
-    beep: true,
-  } satisfies TimerConfig);
+  const beep = true;
+  const initialTimeInMinutes = 10;
+  const initialTime = initialTimeInMinutes * 60;
+  const initialSb = 10;
+
+  const [time, setTime] = useState(initialTime);
+  const [sb, setSb] = useState(initialSb);
+  const [level, setLevel] = useState(1);
+
+  useEffect(() => {
+    if (time <= 0) {
+      if (beep) {
+        //const audio = new Audio("/beep.mp3");
+        //audio.play();
+      }
+      setTime(initialTime);
+      if (level < 9) {
+        setSb(calculateSb(level + 1, initialSb));
+        setLevel(level + 1);
+      }
+    }
+
+    const timer = setInterval(() => {
+      setTime((prevTime) => prevTime - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [time]);
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+    <div className="flex flex-col items-center justify-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-sans">
       <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <h1 className="font-bold text-2xl">Poker Timer</h1>
-        <Timer
-          initialTime={config.initialTime}
-          beep={config.beep}
-          initialSb={config.initialSb}
-          maxSb={config.maxBb}
-        />
+        <h1 className="font-bold text-3xl w-full text-center">Poker Timer</h1>
+        <Timer time={time} />
+        <SbBb sb={sb} />
+        <BlindLevel level={level} />
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      <Footer />
     </div>
   );
+}
+
+function calculateSb(level: number, initialSb: number) {
+  switch (level) {
+    case 1:
+      return initialSb;
+    case 2:
+      return initialSb * 2;
+    case 3:
+      return initialSb * 3;
+    case 4:
+      return initialSb * 5;
+    case 5:
+      return initialSb * 10;
+    case 6:
+      return initialSb * 15;
+    case 7:
+      return initialSb * 20;
+    case 8:
+      return initialSb * 40;
+    case 9:
+      return initialSb * 80;
+    default:
+      throw new Error("Level not found");
+  }
 }
