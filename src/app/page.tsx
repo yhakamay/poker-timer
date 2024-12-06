@@ -15,13 +15,13 @@ export default function Home() {
   const [time, setTime] = useState(initialTime);
   const [sb, setSb] = useState(initialSb);
   const [level, setLevel] = useState(1);
-  const [paused, setPaused] = useState(false);
+  const [paused, setPaused] = useState(true);
 
   useEffect(() => {
     if (time <= 0) {
       if (beep) {
-        //const audio = new Audio("/beep.mp3");
-        //audio.play();
+        const audio = new Audio("/beep.mp3");
+        audio.play();
       }
       setTime(initialTime);
       if (level < 9) {
