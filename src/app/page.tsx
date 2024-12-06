@@ -20,8 +20,8 @@ export default function Home() {
   useEffect(() => {
     if (time <= 0) {
       if (beep) {
-        //const audio = new Audio("/beep.mp3");
-        //audio.play();
+        const audio = new Audio("/beep.mp3");
+        audio.play();
       }
       setTime(initialTime);
       if (level < 9) {
