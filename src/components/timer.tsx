@@ -14,7 +14,7 @@ export default function Timer({ time }: { time: number }) {
           min
         </div>
         <div className="flex flex-col">
-          <span className="countdown font-mono  text-6xl md:text-9xl">
+          <span className="countdown font-mono text-6xl md:text-9xl">
             <span
               style={{ "--value": `${remainingSeconds}` } as CSSProperties}
             ></span>
