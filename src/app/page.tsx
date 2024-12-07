@@ -11,8 +11,7 @@ import { useEffect, useState } from "react";
 
 export default function Home() {
   const beep = true;
-  const initialTimeInMinutes = 10;
-  const initialTime = initialTimeInMinutes * 60;
+  const initialTime = 10 * 60; // 10 minutes
   const initialSb = 100;
 
   const [time, setTime] = useState(initialTime);
