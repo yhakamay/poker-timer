@@ -26,9 +26,8 @@ export default function Home() {
         const audio = new Audio("/beep.mp3");
         audio.play();
       }
-      setTime(initialTime);
+
       if (level < 9) {
-        setSb(calculateSb(level + 1, initialSb));
         setLevel(level + 1);
       }
     }
@@ -44,6 +43,14 @@ export default function Home() {
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [time, paused]);
+
+  // Separate useEffect to update sb when level changes
+  // This is necessary because the sb can also be changed by PrevNextButton
+  // and not only by the timer
+  useEffect(() => {
+    setTime(initialTime);
+    setSb(calculateSb(level, initialSb));
+  }, [level]);
 
   return (
     <>
