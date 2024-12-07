@@ -10,7 +10,7 @@ export default function Home() {
   const beep = true;
   const initialTimeInMinutes = 10;
   const initialTime = initialTimeInMinutes * 60;
-  const initialSb = 10;
+  const initialSb = 100;
 
   const [time, setTime] = useState(initialTime);
   const [sb, setSb] = useState(initialSb);
