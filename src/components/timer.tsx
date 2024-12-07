@@ -8,13 +8,17 @@ export default function Timer({ time }: { time: number }) {
     <div className="w-full flex flex-row justify-center">
       <div className="grid grid-flow-col gap-5 text-center auto-cols-max">
         <div className="flex flex-col">
-          <span className="countdown font-mono text-6xl md:text-9xl">
+          <span
+            className={`countdown font-mono text-6xl md:text-9xl ${time <= 30 ? "text-error" : ""}`}
+          >
             <span style={{ "--value": `${minutes}` } as CSSProperties}></span>
           </span>
           min
         </div>
         <div className="flex flex-col">
-          <span className="countdown font-mono text-6xl md:text-9xl">
+          <span
+            className={`countdown font-mono text-6xl md:text-9xl ${time <= 30 ? "text-error" : ""}`}
+          >
             <span
               style={{ "--value": `${remainingSeconds}` } as CSSProperties}
             ></span>
