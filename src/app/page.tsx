@@ -50,6 +50,7 @@ export default function Home() {
       const body = document.querySelector("body");
 
       if (body !== null) {
+        body.classList.remove("bg-error");
         body.classList.add("animate-invert-flicker");
         setTimeout(() => {
           body.classList.remove("animate-invert-flicker");
