@@ -81,7 +81,7 @@ export default function Home() {
 
   return (
     <>
-      <div className="flex flex-col items-center justify-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-sans">
+      <div className="flex flex-col items-center justify-center min-h-dvh p-8 pb-20 gap-16 sm:p-20 font-sans">
         <Navbar />
         <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
           <div className="w-16"></div>
