@@ -28,6 +28,22 @@ export default function Home() {
 
       if (level < 9) {
         setLevel(level + 1);
+        // setTime() is handled in a separate useEffect
+      }
+
+      if (level === 9) {
+        setPaused(true);
+      }
+
+      // flash the background color to tell inaudible users that the time is up
+      // use tailwindcss classes to change the background color
+      const body = document.querySelector("body");
+
+      if (body !== null) {
+        body.classList.add("animate-invert-flicker");
+        setTimeout(() => {
+          body.classList.remove("animate-invert-flicker");
+        }, 1000);
       }
     }
 
