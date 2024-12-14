@@ -16,6 +16,15 @@ export default {
         sans: ["var(--font-geist-sans)"],
         mono: ["var(--font-geist-mono)"],
       },
+      keyframes: {
+        "invert-flicker": {
+          "0%, 100%": { filter: "invert(0)" },
+          "50%": { filter: "invert(1)" },
+        },
+      },
+      animation: {
+        "invert-flicker": "invert-flicker 0.4s infinite",
+      },
     },
   },
   // eslint-disable-next-line @typescript-eslint/no-require-imports
