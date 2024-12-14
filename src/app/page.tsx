@@ -45,8 +45,8 @@ export default function Home() {
         setPaused(true);
       }
 
-      // flash the background color to tell inaudible users that the time is up
-      // use tailwindcss classes to change the background color
+      // Flash the background color to tell inaudible users that the time is up
+      // using a custom animation class defined in tailwind.config.ts
       const body = document.querySelector("body");
 
       if (body !== null) {
