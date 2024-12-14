@@ -20,7 +20,17 @@ export default function Home() {
   const [paused, setPaused] = useState(true);
 
   useEffect(() => {
-    if (time <= 0) {
+    // If the time is less than 30 seconds, change the background color
+    // to red to alert the player
+    if (time < 30) {
+      const body = document.querySelector("body");
+
+      if (body !== null) {
+        body.classList.add("bg-error");
+      }
+    }
+
+    if (time < 0) {
       if (beep) {
         const audio = new Audio("/beep.mp3");
         audio.play();
