@@ -76,6 +76,7 @@ export default function Home() {
   useEffect(() => {
     setTime(initialTime);
     setSb(calculateSb(level, initialSb));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [level]);
 
   return (
