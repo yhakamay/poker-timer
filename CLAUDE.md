@@ -1,7 +1,8 @@
 # poker-timer
 
-Single-page poker blind timer. Next.js 15 App Router, React 19, TypeScript,
-Tailwind 3, daisyUI 5. No tests, no backend, no database.
+Single-page poker blind timer. Next.js 16 App Router, React 19, TypeScript,
+Tailwind 4 (CSS-first config, no component library). No tests, no backend,
+no database.
 
 ## Commands
 
@@ -23,22 +24,19 @@ Before calling a change done, run `lint`, `typecheck`, and `build`.
 - `src/components/*` — presentational only, props in, no state of their own.
   The one exception is that `page.tsx` reaches into `document.body` directly to
   toggle `bg-error` and `animate-invert-flicker`.
-- `tailwind.config.ts` — daisyUI plugin registration and the custom
-  `invert-flicker` keyframes.
+- `src/app/globals.css` — the Tailwind 4 CSS-first config (`@theme`: colors,
+  fonts, the `invert-flicker` animation) plus the hand-written widget classes
+  (`.btn*`, `.digit` rolling countdown, `.steps`/`.step` level indicator).
+  There is no `tailwind.config.ts`.
 
 ## Gotchas
 
-- **daisyUI 5 on Tailwind 3.** Unsupported upstream but working. daisyUI is
-  registered as a v3 plugin (`plugins: [require("daisyui")]`), not via the v4
-  `@plugin` CSS directive. Upgrading either package means upgrading both and
-  rewriting `globals.css` to the CSS-first config.
-- **Two deps are pinned deliberately** — `tailwindcss` (3.x) and `daisyui`
-  (5.0.9). Each was tested and rejected; see "Pinned dependencies" in README.md
-  before bumping. Close Dependabot PRs for these rather than merging them.
-- **A green build does not mean the UI works.** daisyui 5.5.14 passes lint,
-  typecheck, and build while the countdown digits silently stop rendering. For
-  any Tailwind/daisyUI change, check the real page: `.countdown span`'s
-  `::before` content should be the `"00\a 01\a …"` digit string, and
+- **Style-affecting rules must live in a cascade layer.** Tailwind 4 puts
+  utilities in the native `utilities` layer, so an unlayered rule in
+  `globals.css` (e.g. on `body`) silently wins over utility classes like
+  `bg-error`. Add such rules inside `@layer base`/`@layer components`.
+- **A green build does not mean the UI works.** For any styling change, check
+  the real page: the countdown digits should roll (`.digit` strips), and
   `.btn-primary` should have a non-transparent background.
 - **Level count is hardcoded in three places** — `maxLevel` in `page.tsx`,
   `maxLevel` in `prev-next-button.tsx`, and the nine hand-written `<li>`
