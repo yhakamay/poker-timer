@@ -6,22 +6,30 @@ import Navbar from "@/components/navbar";
 import PlayPauseButton from "@/components/play-pause-button";
 import PrevNextButton from "@/components/prev-next-button";
 import SbBb from "@/components/sb-bb";
+import SettingsDialog from "@/components/settings-dialog";
 import Timer from "@/components/timer";
-import { useEffect, useRef, useState } from "react";
+import {
+  defaultSettings,
+  loadSettings,
+  saveSettings,
+  Settings,
+} from "@/lib/settings";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-const initialTime = 10 * 60; // 10 minutes
-const initialSb = 100;
-const maxLevel = 9;
+const GAME_KEY = "poker-timer:game";
 
 export default function Home() {
-  const [time, setTime] = useState(initialTime);
+  const [settings, setSettings] = useState(defaultSettings);
+  const [time, setTime] = useState(defaultSettings.levelMinutes * 60);
   const [level, setLevel] = useState(1);
   const [paused, setPaused] = useState(true);
   const [flashing, setFlashing] = useState(false);
 
+  const levelSeconds = settings.levelMinutes * 60;
+  const maxLevel = settings.smallBlinds.length;
   // The blinds are fully determined by the level, so derive them during render
   // instead of keeping a second copy in state
-  const sb = calculateSb(level, initialSb);
+  const sb = settings.smallBlinds[level - 1];
 
   // While running, the source of truth for the remaining time is a deadline
   // timestamp, not a decrementing counter: each tick recomputes the remaining
@@ -32,6 +40,64 @@ export default function Home() {
   // Lazily created on the first play press (a user gesture, which is what
   // browser autoplay policies require to unlock audio)
   const audioCtxRef = useRef<AudioContext | null>(null);
+
+  const settingsDialogRef = useRef<HTMLDialogElement>(null);
+
+  // Blocks the game-state persist effect from clobbering the saved game with
+  // defaults before the restore below has run
+  const restoredRef = useRef(false);
+
+  // Restore settings and any in-progress game after mount; the server render
+  // must use the defaults, so localStorage can only be read here. The one-off
+  // cascading render this causes is exactly the intended hydration step.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const stored = loadSettings();
+    if (stored) {
+      setSettings(stored);
+    }
+    const active = stored ?? defaultSettings;
+    const seconds = active.levelMinutes * 60;
+
+    const game = loadGame(active);
+    if (game) {
+      setLevel(game.level);
+      setTime(game.remaining);
+    } else {
+      setTime(seconds);
+    }
+    restoredRef.current = true;
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Persist the game so a reload or accidental tab close resumes where the
+  // game left off (always paused, never mid-countdown)
+  useEffect(() => {
+    if (!restoredRef.current) {
+      return;
+    }
+    localStorage.setItem(GAME_KEY, JSON.stringify({ level, remaining: time }));
+  }, [level, time]);
+
+  // Flash the screen to tell inaudible users that the time is up, using the
+  // invert-flicker animation defined in globals.css
+  const flash = useCallback(() => {
+    setFlashing(true);
+    setTimeout(() => setFlashing(false), 1000);
+  }, []);
+
+  const goToLevel = useCallback(
+    (nextLevel: number) => {
+      setLevel(nextLevel);
+      setTime(levelSeconds);
+      // A non-null deadline means the clock is running; checking the ref (not
+      // `paused`) keeps this correct even from a stale closure
+      if (endAtRef.current !== null) {
+        endAtRef.current = Date.now() + levelSeconds * 1000;
+      }
+    },
+    [levelSeconds],
+  );
 
   useEffect(() => {
     if (paused) {
@@ -64,17 +130,7 @@ export default function Home() {
     }, 250);
 
     return () => clearInterval(timer);
-  }, [paused, level]);
-
-  function goToLevel(nextLevel: number) {
-    setLevel(nextLevel);
-    setTime(initialTime);
-    // A non-null deadline means the clock is running; checking the ref (not
-    // `paused`) keeps this correct even from a stale closure
-    if (endAtRef.current !== null) {
-      endAtRef.current = Date.now() + initialTime * 1000;
-    }
-  }
+  }, [paused, level, maxLevel, goToLevel, flash]);
 
   function togglePaused() {
     if (paused) {
@@ -95,11 +151,14 @@ export default function Home() {
     setPaused(true);
   }
 
-  // Flash the screen to tell inaudible users that the time is up, using the
-  // invert-flicker animation defined in globals.css
-  function flash() {
-    setFlashing(true);
-    setTimeout(() => setFlashing(false), 1000);
+  function applySettings(next: Settings) {
+    saveSettings(next);
+    setSettings(next);
+    // New schedule, new game
+    endAtRef.current = null;
+    setPaused(true);
+    setLevel(1);
+    setTime(next.levelMinutes * 60);
   }
 
   return (
@@ -110,33 +169,78 @@ export default function Home() {
         time < 30 ? "bg-error" : ""
       } ${flashing ? "animate-invert-flicker" : ""}`}
     >
-      <Navbar />
+      <Navbar
+        onOpenSettings={() => settingsDialogRef.current?.showModal()}
+      />
       <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
         <div className="w-16"></div>
         <Timer time={time} />
         <div className="self-center flex flex-row gap-8">
           <PrevNextButton
             currentLevel={level}
+            maxLevel={maxLevel}
             onLevelChange={goToLevel}
             type={"prev"}
           />
           <PlayPauseButton onToggle={togglePaused} paused={paused} />
           <PrevNextButton
             currentLevel={level}
+            maxLevel={maxLevel}
             onLevelChange={goToLevel}
             type={"next"}
           />
         </div>
         <SbBb sb={sb} />
-        <BlindLevel level={level} />
+        <BlindLevel level={level} maxLevel={maxLevel} />
       </main>
       <Footer />
+      <SettingsDialog
+        // Remount on settings change so the dialog's draft state always
+        // starts from the currently saved settings
+        key={JSON.stringify(settings)}
+        ref={settingsDialogRef}
+        settings={settings}
+        onSave={applySettings}
+      />
     </div>
   );
 }
 
 function remainingSeconds(endAt: number) {
   return Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+}
+
+// Reads the saved game and validates it against the active settings; anything
+// out of range (e.g. the schedule shrank) starts a fresh game instead
+function loadGame(settings: Settings): { level: number; remaining: number } | null {
+  try {
+    const raw = localStorage.getItem(GAME_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) {
+      return null;
+    }
+
+    const { level, remaining } = parsed as Record<string, unknown>;
+    const seconds = settings.levelMinutes * 60;
+    if (
+      !Number.isInteger(level) ||
+      (level as number) < 1 ||
+      (level as number) > settings.smallBlinds.length ||
+      !Number.isInteger(remaining) ||
+      (remaining as number) < 0 ||
+      (remaining as number) > seconds
+    ) {
+      return null;
+    }
+
+    return { level: level as number, remaining: remaining as number };
+  } catch {
+    return null;
+  }
 }
 
 // A short triple beep generated with the Web Audio API — no audio asset needed
@@ -161,30 +265,5 @@ function beep(ctx: AudioContext | null) {
     gain.connect(ctx.destination);
     oscillator.start(t);
     oscillator.stop(t + 0.22);
-  }
-}
-
-function calculateSb(level: number, initialSb: number) {
-  switch (level) {
-    case 1:
-      return initialSb;
-    case 2:
-      return initialSb * 2;
-    case 3:
-      return initialSb * 3;
-    case 4:
-      return initialSb * 5;
-    case 5:
-      return initialSb * 10;
-    case 6:
-      return initialSb * 15;
-    case 7:
-      return initialSb * 20;
-    case 8:
-      return initialSb * 40;
-    case 9:
-      return initialSb * 80;
-    default:
-      throw new Error("Level not found");
   }
 }

@@ -18,10 +18,14 @@ Before calling a change done, run `lint`, `typecheck`, and `build`.
 ## Layout
 
 - `src/app/page.tsx` — the whole app. Client component holding all state
-  (`time`, `level`, `paused`) plus the `calculateSb` blind schedule. `sb` is
-  derived from `level` during render, not stored. Level count (`maxLevel`) and
-  level length (`initialTime`) are constants here.
+  (`time`, `level`, `paused`, `settings`). `sb`, `maxLevel`, and the level
+  length are all derived from `settings` during render, not stored.
+- `src/lib/settings.ts` — the `Settings` type, the default blind schedule,
+  and the localStorage load/save (with validation). The in-progress game is
+  persisted separately under `poker-timer:game` by `page.tsx`.
 - `src/components/*` — presentational only, props in, no state of their own.
+  The one exception is `settings-dialog.tsx`, which keeps draft state while
+  editing; the page remounts it (via `key`) when saved settings change.
 - `src/app/globals.css` — the Tailwind 4 CSS-first config (`@theme`: colors,
   fonts, the `invert-flicker` animation) plus the hand-written widget classes
   (`.btn*`, `.digit` rolling countdown, `.steps`/`.step` level indicator).
@@ -36,10 +40,10 @@ Before calling a change done, run `lint`, `typecheck`, and `build`.
 - **A green build does not mean the UI works.** For any styling change, check
   the real page: the countdown digits should roll (`.digit` strips), and
   `.btn-primary` should have a non-transparent background.
-- **Level count is hardcoded in three places** — `maxLevel` in `page.tsx`,
-  `maxLevel` in `prev-next-button.tsx`, and the nine hand-written `<li>`
-  elements in `blind-level.tsx`. Changing the schedule means touching all three.
-- **`calculateSb` throws** on any level outside 1–9 rather than clamping.
+- **localStorage is only touched after mount.** The server render always uses
+  the defaults; settings and the saved game are restored in a mount effect to
+  avoid hydration mismatches. Saved data is validated on load — anything out
+  of range falls back to a fresh game.
 - **`postcss` and `sharp` are forced forward by npm `overrides`.** `next` pins
   `postcss` to 8.4.31 and caps `sharp` at `^0.34.5`, both with open advisories;
   the overrides in `package.json` are what keep `npm audit` at zero. The
