@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Poker Timer
 
-## Getting Started
+A simple blind timer for home poker games. Counts down each level, bumps the
+blinds automatically, and beeps + flashes the screen when time is up.
 
-First, run the development server:
+![Poker Timer](public/Poker%20Timer.png)
+
+## Requirements
+
+- Node.js 20.9+ (the repo pins **24** via [`.nvmrc`](.nvmrc))
+- npm
+
+## Getting started
+
+```bash
+npm ci
+```
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open <http://localhost:3000>.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command             | What it does                                  |
+| ------------------- | --------------------------------------------- |
+| `npm run dev`       | Dev server on port 3000 (Turbopack)           |
+| `npm run build`     | Production build                              |
+| `npm start`         | Serve the production build (run `build` first) |
+| `npm run lint`      | ESLint                                        |
+| `npm run typecheck` | `tsc --noEmit`                                |
 
-## Learn More
+## How it works
 
-To learn more about Next.js, take a look at the following resources:
+Everything lives in a single client component, [`src/app/page.tsx`](src/app/page.tsx),
+which owns all the state — `time`, `sb`, `level`, `paused`:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **9 blind levels**, 10 minutes each. Both are constants at the top of
+  `page.tsx` (`initialTime`, `initialSb`) — change them there.
+- **Blind schedule** is the `calculateSb` function at the bottom of `page.tsx`.
+  It multiplies the initial small blind by `1, 2, 3, 5, 10, 15, 20, 40, 80`.
+  BB is always 2×SB, computed in [`sb-bb.tsx`](src/components/sb-bb.tsx).
+- **Under 30 seconds** the background turns red (`bg-error`).
+- **At zero** it plays [`public/beep.mp3`](public/beep.mp3), flashes the screen
+  with the custom `invert-flicker` animation from
+  [`tailwind.config.ts`](tailwind.config.ts), and advances to the next level.
+  After level 9 it pauses instead.
+- **Prev/next buttons** jump levels manually; a `useEffect` keyed on `level`
+  resets the clock and recalculates blinds either way.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+State is in-memory only — a page refresh restarts at level 1.
 
-## Deploy on Vercel
+## Stack
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS 3 · daisyUI 5
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+daisyUI 5 officially targets Tailwind 4, but it works against Tailwind 3 here
+and is loaded the v3 way — as a plugin in `tailwind.config.ts`. Keep that in
+mind before upgrading either one; they need to move together.
+
+## Deploy
+
+Static output, so any Node host works. Deploying to
+[Vercel](https://vercel.com/new) needs no configuration.
+
+## Maintenance
+
+Dependabot opens npm PRs weekly ([`.github/dependabot.yml`](.github/dependabot.yml)),
+and CI runs lint + typecheck + build on every PR
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+
+`npm audit` currently reports 3 high-severity advisories in `postcss` and
+`sharp` — both are vendored inside `next` itself, so they clear when Next.js
+ships a patched release. npm's only offered "fix" is downgrading Next to 9.x;
+don't take it.
