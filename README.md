@@ -34,18 +34,27 @@ Then open <http://localhost:3000>.
 
 ## How it works
 
+It's laid out as a tournament clock: level and structure at the top, the
+remaining time as the headline, current and next blinds beneath it, controls at
+the bottom. The point is that it stays readable from across the table.
+
 Everything lives in a single client component, [`src/app/page.tsx`](src/app/page.tsx),
 which owns all the state — `time`, `level`, `paused`, `settings`:
 
 - **9 blind levels by default**, 10 minutes each, small blinds
   `100, 200, 300, 500, 1000, 1500, 2000, 4000, 8000`. BB is always 2×SB.
   The defaults live in [`src/lib/settings.ts`](src/lib/settings.ts).
+- **Next blinds are always shown**, so the table can see what's coming.
+- **The level bar** has one segment per level; the current segment fills as the
+  clock runs, so "how far in are we" and "how long is left" read at a glance.
 - **Everything is editable** in the settings dialog (gear icon, a native
   `<dialog>`): minutes per level, and the small blind for each level —
   add or remove levels freely. Saved settings persist in `localStorage`.
 - **The game survives a reload.** The current level and remaining time are
   saved as they change and restored (paused) on the next visit.
-- **Under 30 seconds** the background turns red (`bg-error`).
+- **Keyboard**: `Space` starts/pauses, `←` / `→` change level.
+- **Under 30 seconds** the digits and the level bar turn red and a red vignette
+  comes up behind the board — loud enough to notice, dim enough to still read.
 - **At zero** it plays a triple beep generated with the Web Audio API (no
   audio asset), vibrates on devices that support it, flashes the screen with
   the custom `invert-flicker` animation from
@@ -70,6 +79,11 @@ No component library: the handful of widget styles the app needs (buttons, the
 rolling countdown digits, the level indicator) are defined by hand in
 [`globals.css`](src/app/globals.css), which also holds the Tailwind CSS-first
 config (`@theme`) — there is no `tailwind.config.ts`.
+
+**Dark only, on purpose.** Poker happens in dim rooms; there is no light theme
+to keep in sync. The type scales with the viewport (`clamp` on both `vw` and
+`vh`), and on short landscape screens — a phone propped on its side — the board
+switches to a side-by-side layout via the `squat` variant.
 
 ## Deploy
 

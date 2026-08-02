@@ -1,13 +1,31 @@
 interface Props {
+  level: number;
+  maxLevel: number;
   onOpenSettings: () => void;
 }
 
-export default function Navbar({ onOpenSettings }: Props) {
+export default function Header({ level, maxLevel, onOpenSettings }: Props) {
   return (
-    <div className="absolute top-0 w-full flex flex-row items-center min-h-16 p-2 justify-center md:justify-start px-8">
-      <h1 className="text-2xl font-mono font-bold">Poker Timer</h1>
+    <header className="flex w-full items-center justify-between gap-4">
+      <div className="flex min-w-0 items-center gap-2">
+        <span aria-hidden="true" className="text-accent">
+          ♠
+        </span>
+        <h1 className="label truncate">Poker Timer</h1>
+      </div>
+
+      <div className="flex items-baseline gap-2">
+        <span className="label">Level</span>
+        <span className="font-mono text-2xl font-semibold tabular-nums text-ink sm:text-3xl">
+          {level}
+        </span>
+        <span className="font-mono text-base tabular-nums text-dim">
+          / {maxLevel}
+        </span>
+      </div>
+
       <button
-        className="btn btn-ghost btn-square absolute right-4"
+        className="btn btn-ghost !h-10 !min-w-10 !px-0"
         aria-label="Settings"
         onClick={onOpenSettings}
       >
@@ -17,7 +35,7 @@ export default function Navbar({ onOpenSettings }: Props) {
           viewBox="0 0 24 24"
           strokeWidth={1.5}
           stroke="currentColor"
-          className="size-6"
+          className="size-5"
         >
           <path
             strokeLinecap="round"
@@ -31,6 +49,6 @@ export default function Navbar({ onOpenSettings }: Props) {
           />
         </svg>
       </button>
-    </div>
+    </header>
   );
 }

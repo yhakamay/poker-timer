@@ -1,11 +1,11 @@
 "use client";
 
-import BlindLevel from "@/components/blind-level";
+import Blinds from "@/components/blinds";
 import Footer from "@/components/footer";
-import Navbar from "@/components/navbar";
+import Header from "@/components/header";
+import LevelProgress from "@/components/level-progress";
 import PlayPauseButton from "@/components/play-pause-button";
 import PrevNextButton from "@/components/prev-next-button";
-import SbBb from "@/components/sb-bb";
 import SettingsDialog from "@/components/settings-dialog";
 import Timer from "@/components/timer";
 import {
@@ -17,6 +17,9 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const GAME_KEY = "poker-timer:game";
+
+// How long before the end of a level the board switches to its alert look
+const dangerSeconds = 30;
 
 export default function Home() {
   const [settings, setSettings] = useState(defaultSettings);
@@ -30,6 +33,9 @@ export default function Home() {
   // The blinds are fully determined by the level, so derive them during render
   // instead of keeping a second copy in state
   const sb = settings.smallBlinds[level - 1];
+  const nextSb = level < maxLevel ? settings.smallBlinds[level] : null;
+  const progress = (levelSeconds - time) / levelSeconds;
+  const danger = time < dangerSeconds;
 
   // While running, the source of truth for the remaining time is a deadline
   // timestamp, not a decrementing counter: each tick recomputes the remaining
@@ -46,38 +52,6 @@ export default function Home() {
   // Blocks the game-state persist effect from clobbering the saved game with
   // defaults before the restore below has run
   const restoredRef = useRef(false);
-
-  // Restore settings and any in-progress game after mount; the server render
-  // must use the defaults, so localStorage can only be read here. The one-off
-  // cascading render this causes is exactly the intended hydration step.
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    const stored = loadSettings();
-    if (stored) {
-      setSettings(stored);
-    }
-    const active = stored ?? defaultSettings;
-    const seconds = active.levelMinutes * 60;
-
-    const game = loadGame(active);
-    if (game) {
-      setLevel(game.level);
-      setTime(game.remaining);
-    } else {
-      setTime(seconds);
-    }
-    restoredRef.current = true;
-  }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  // Persist the game so a reload or accidental tab close resumes where the
-  // game left off (always paused, never mid-countdown)
-  useEffect(() => {
-    if (!restoredRef.current) {
-      return;
-    }
-    localStorage.setItem(GAME_KEY, JSON.stringify({ level, remaining: time }));
-  }, [level, time]);
 
   // Flash the screen to tell inaudible users that the time is up, using the
   // invert-flicker animation defined in globals.css
@@ -99,6 +73,56 @@ export default function Home() {
     [levelSeconds],
   );
 
+  const togglePaused = useCallback(() => {
+    if (paused) {
+      audioCtxRef.current ??= new AudioContext();
+      if (audioCtxRef.current.state === "suspended") {
+        audioCtxRef.current.resume();
+      }
+      endAtRef.current = Date.now() + time * 1000;
+      setPaused(false);
+      return;
+    }
+
+    // Freeze the displayed time at the exact remaining amount
+    if (endAtRef.current !== null) {
+      setTime(remainingSeconds(endAtRef.current));
+    }
+    endAtRef.current = null;
+    setPaused(true);
+  }, [paused, time]);
+
+  // Restore settings and any in-progress game after mount; the server render
+  // must use the defaults, so localStorage can only be read here. The one-off
+  // cascading render this causes is exactly the intended hydration step.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const stored = loadSettings();
+    if (stored) {
+      setSettings(stored);
+    }
+    const active = stored ?? defaultSettings;
+
+    const game = loadGame(active);
+    if (game) {
+      setLevel(game.level);
+      setTime(game.remaining);
+    } else {
+      setTime(active.levelMinutes * 60);
+    }
+    restoredRef.current = true;
+  }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Persist the game so a reload or accidental tab close resumes where the
+  // game left off (always paused, never mid-countdown)
+  useEffect(() => {
+    if (!restoredRef.current) {
+      return;
+    }
+    localStorage.setItem(GAME_KEY, JSON.stringify({ level, remaining: time }));
+  }, [level, time]);
+
   // Offline support: the service worker caches the app shell. Registered only
   // in production so the dev server never fights a stale cache
   useEffect(() => {
@@ -106,6 +130,30 @@ export default function Home() {
       navigator.serviceWorker.register("/sw.js");
     }
   }, []);
+
+  // The board usually runs on a laptop parked next to the table, so drive it
+  // from the keyboard too. Elements that handle these keys themselves (buttons,
+  // the settings inputs) are left alone.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, select, button, dialog")) {
+        return;
+      }
+
+      if (event.key === " ") {
+        event.preventDefault();
+        togglePaused();
+      } else if (event.key === "ArrowLeft" && level > 1) {
+        goToLevel(level - 1);
+      } else if (event.key === "ArrowRight" && level < maxLevel) {
+        goToLevel(level + 1);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [togglePaused, goToLevel, level, maxLevel]);
 
   // Keep the screen awake while the clock is running — a timer that lets the
   // phone on the table go to sleep is not much of a timer. The browser drops
@@ -179,25 +227,6 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [paused, level, maxLevel, goToLevel, flash]);
 
-  function togglePaused() {
-    if (paused) {
-      audioCtxRef.current ??= new AudioContext();
-      if (audioCtxRef.current.state === "suspended") {
-        audioCtxRef.current.resume();
-      }
-      endAtRef.current = Date.now() + time * 1000;
-      setPaused(false);
-      return;
-    }
-
-    // Freeze the displayed time at the exact remaining amount
-    if (endAtRef.current !== null) {
-      setTime(remainingSeconds(endAtRef.current));
-    }
-    endAtRef.current = null;
-    setPaused(true);
-  }
-
   function applySettings(next: Settings) {
     saveSettings(next);
     setSettings(next);
@@ -210,37 +239,56 @@ export default function Home() {
 
   return (
     <div
-      className={`flex flex-col items-center justify-center min-h-dvh p-8 pb-20 gap-16 sm:p-20 font-sans ${
-        // If less than 30 seconds are left, turn the background red to alert
-        // the players
-        time < 30 ? "bg-error" : ""
-      } ${flashing ? "animate-invert-flicker" : ""}`}
+      className={`relative flex min-h-dvh flex-col gap-5 p-4 sm:gap-8 sm:p-8 squat:gap-3 squat:p-4 ${
+        flashing ? "animate-invert-flicker" : ""
+      }`}
     >
-      <Navbar
+      {danger && (
+        <div
+          aria-hidden="true"
+          className="danger-glow pointer-events-none fixed inset-0"
+        />
+      )}
+
+      <Header
+        level={level}
+        maxLevel={maxLevel}
         onOpenSettings={() => settingsDialogRef.current?.showModal()}
       />
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <div className="w-16"></div>
-        <Timer time={time} />
-        <div className="self-center flex flex-row gap-8">
-          <PrevNextButton
-            currentLevel={level}
-            maxLevel={maxLevel}
-            onLevelChange={goToLevel}
-            type={"prev"}
-          />
-          <PlayPauseButton onToggle={togglePaused} paused={paused} />
-          <PrevNextButton
-            currentLevel={level}
-            maxLevel={maxLevel}
-            onLevelChange={goToLevel}
-            type={"next"}
-          />
+
+      <LevelProgress
+        level={level}
+        maxLevel={maxLevel}
+        progress={progress}
+        danger={danger}
+      />
+
+      <main className="flex flex-1 flex-col items-center justify-center gap-6 sm:gap-10 squat:flex-row squat:gap-8">
+        <Timer time={time} danger={danger} />
+
+        <div className="flex w-full max-w-3xl flex-col items-center gap-6 sm:gap-8 squat:max-w-xs squat:gap-4">
+          <Blinds sb={sb} nextSb={nextSb} />
+
+          <div className="flex items-center gap-3 sm:gap-4">
+            <PrevNextButton
+              currentLevel={level}
+              maxLevel={maxLevel}
+              onLevelChange={goToLevel}
+              type={"prev"}
+            />
+            <PlayPauseButton onToggle={togglePaused} paused={paused} />
+            <PrevNextButton
+              currentLevel={level}
+              maxLevel={maxLevel}
+              onLevelChange={goToLevel}
+              type={"next"}
+            />
+          </div>
         </div>
-        <SbBb sb={sb} />
-        <BlindLevel level={level} maxLevel={maxLevel} />
       </main>
+
       <Footer />
+
       <SettingsDialog
         // Remount on settings change so the dialog's draft state always
         // starts from the currently saved settings
@@ -259,7 +307,9 @@ function remainingSeconds(endAt: number) {
 
 // Reads the saved game and validates it against the active settings; anything
 // out of range (e.g. the schedule shrank) starts a fresh game instead
-function loadGame(settings: Settings): { level: number; remaining: number } | null {
+function loadGame(
+  settings: Settings,
+): { level: number; remaining: number } | null {
   try {
     const raw = localStorage.getItem(GAME_KEY);
     if (!raw) {
