@@ -1,17 +1,16 @@
-import { Dispatch, SetStateAction } from "react";
-
 interface Props {
-  setPaused: Dispatch<SetStateAction<boolean>>;
+  onToggle: () => void;
   paused: boolean;
 }
 
 export default function PlayPauseButton(props: Props) {
-  const { setPaused, paused } = props;
+  const { onToggle, paused } = props;
 
   return (
     <button
       className={`btn btn-square ${paused ? "btn-primary" : ""}`}
-      onClick={() => setPaused(!paused)}
+      onClick={onToggle}
+      aria-label={paused ? "Play" : "Pause"}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

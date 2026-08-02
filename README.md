@@ -43,12 +43,15 @@ which owns all the state — `time`, `sb`, `level`, `paused`:
   It multiplies the initial small blind by `1, 2, 3, 5, 10, 15, 20, 40, 80`.
   BB is always 2×SB, computed in [`sb-bb.tsx`](src/components/sb-bb.tsx).
 - **Under 30 seconds** the background turns red (`bg-error`).
-- **At zero** it plays [`public/beep.mp3`](public/beep.mp3), flashes the screen
-  with the custom `invert-flicker` animation from
+- **At zero** it plays a triple beep generated with the Web Audio API (no
+  audio asset), vibrates on devices that support it, flashes the screen with
+  the custom `invert-flicker` animation from
   [`globals.css`](src/app/globals.css), and advances to the next level.
   After level 9 it pauses instead.
-- **Prev/next buttons** jump levels manually; a `useEffect` keyed on `level`
-  resets the clock and recalculates blinds either way.
+- **The clock doesn't drift.** While running, the remaining time is recomputed
+  every 250 ms from a deadline timestamp, so it stays correct even when the
+  browser throttles timers in a background tab.
+- **Prev/next buttons** jump levels manually and reset the clock either way.
 
 State is in-memory only — a page refresh restarts at level 1.
 

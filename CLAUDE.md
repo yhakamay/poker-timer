@@ -22,8 +22,6 @@ Before calling a change done, run `lint`, `typecheck`, and `build`.
   derived from `level` during render, not stored. Level count (`maxLevel`) and
   level length (`initialTime`) are constants here.
 - `src/components/*` — presentational only, props in, no state of their own.
-  The one exception is that `page.tsx` reaches into `document.body` directly to
-  toggle `bg-error` and `animate-invert-flicker`.
 - `src/app/globals.css` — the Tailwind 4 CSS-first config (`@theme`: colors,
   fonts, the `invert-flicker` animation) plus the hand-written widget classes
   (`.btn*`, `.digit` rolling countdown, `.steps`/`.step` level indicator).
