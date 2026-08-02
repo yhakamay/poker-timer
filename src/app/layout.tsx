@@ -17,6 +17,14 @@ export const metadata: Metadata = {
   title: "Poker Timer",
   description: "A simple poker timer.",
   generator: "Next.js",
+  icons: {
+    apple: "/icon-192.png",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Poker Timer",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
