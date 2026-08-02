@@ -54,6 +54,12 @@ which owns all the state — `time`, `level`, `paused`, `settings`:
 - **The clock doesn't drift.** While running, the remaining time is recomputed
   every 250 ms from a deadline timestamp, so it stays correct even when the
   browser throttles timers in a background tab.
+- **The screen stays awake** while the clock runs (Screen Wake Lock API), so
+  the phone on the table doesn't go to sleep mid-level.
+- **It's a PWA.** Add it to your home screen and it works offline — a
+  service worker ([`public/sw.js`](public/sw.js)) caches the app shell, and
+  [`src/app/manifest.ts`](src/app/manifest.ts) provides the manifest and
+  icons. The worker registers in production builds only.
 - **Prev/next buttons** jump levels manually and reset the clock either way.
 
 ## Stack

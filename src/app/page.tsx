@@ -99,6 +99,53 @@ export default function Home() {
     [levelSeconds],
   );
 
+  // Offline support: the service worker caches the app shell. Registered only
+  // in production so the dev server never fights a stale cache
+  useEffect(() => {
+    if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
+      navigator.serviceWorker.register("/sw.js");
+    }
+  }, []);
+
+  // Keep the screen awake while the clock is running — a timer that lets the
+  // phone on the table go to sleep is not much of a timer. The browser drops
+  // the lock when the tab is hidden, so re-acquire it on return
+  useEffect(() => {
+    if (paused || !("wakeLock" in navigator)) {
+      return;
+    }
+
+    let lock: WakeLockSentinel | null = null;
+    let cancelled = false;
+
+    const acquire = async () => {
+      try {
+        const acquired = await navigator.wakeLock.request("screen");
+        if (cancelled) {
+          acquired.release();
+        } else {
+          lock = acquired;
+        }
+      } catch {
+        // Denied (e.g. power saver) — the timer still works without it
+      }
+    };
+
+    acquire();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        acquire();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      lock?.release().catch(() => {});
+    };
+  }, [paused]);
+
   useEffect(() => {
     if (paused) {
       return;
