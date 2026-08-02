@@ -45,7 +45,7 @@ which owns all the state — `time`, `sb`, `level`, `paused`:
 - **Under 30 seconds** the background turns red (`bg-error`).
 - **At zero** it plays [`public/beep.mp3`](public/beep.mp3), flashes the screen
   with the custom `invert-flicker` animation from
-  [`tailwind.config.ts`](tailwind.config.ts), and advances to the next level.
+  [`globals.css`](src/app/globals.css), and advances to the next level.
   After level 9 it pauses instead.
 - **Prev/next buttons** jump levels manually; a `useEffect` keyed on `level`
   resets the clock and recalculates blinds either way.
@@ -54,25 +54,12 @@ State is in-memory only — a page refresh restarts at level 1.
 
 ## Stack
 
-Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 3 · daisyUI 5
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4
 
-daisyUI 5 officially targets Tailwind 4, but it works against Tailwind 3 here
-and is loaded the v3 way — as a plugin in `tailwind.config.ts`. Both are pinned
-deliberately; see [Pinned dependencies](#pinned-dependencies) before bumping
-either.
-
-## Pinned dependencies
-
-Two packages are held back on purpose. Each was tested and rejected:
-
-- **tailwindcss — stays on 3.x.** v4 moved the PostCSS plugin to
-  `@tailwindcss/postcss`, so a plain version bump fails the build outright.
-  Migrating means updating `postcss.config.mjs`, rewriting `globals.css` to the
-  CSS-first config, and re-registering daisyUI via `@plugin`.
-- **daisyui — stays on 5.0.9.** 5.5.14 builds green and passes lint and
-  typecheck, but silently breaks the UI on Tailwind 3: the countdown digits stop
-  rendering and `btn-primary` loses its color. CI cannot catch this — verify in
-  a browser if you bump it.
+No component library: the handful of widget styles the app needs (buttons, the
+rolling countdown digits, the level indicator) are defined by hand in
+[`globals.css`](src/app/globals.css), which also holds the Tailwind CSS-first
+config (`@theme`) — there is no `tailwind.config.ts`.
 
 ## Deploy
 
