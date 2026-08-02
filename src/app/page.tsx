@@ -7,77 +7,71 @@ import PlayPauseButton from "@/components/play-pause-button";
 import PrevNextButton from "@/components/prev-next-button";
 import SbBb from "@/components/sb-bb";
 import Timer from "@/components/timer";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const beep = true;
+const initialTime = 10 * 60; // 10 minutes
+const initialSb = 100;
+const maxLevel = 9;
 
 export default function Home() {
-  const beep = true;
-  const initialTime = 10 * 60; // 10 minutes
-  const initialSb = 100;
-
   const [time, setTime] = useState(initialTime);
-  const [sb, setSb] = useState(initialSb);
   const [level, setLevel] = useState(1);
   const [paused, setPaused] = useState(true);
 
+  // The blinds are fully determined by the level, so derive them during render
+  // instead of keeping a second copy in state
+  const sb = calculateSb(level, initialSb);
+
+  // The countdown interval below is re-created only when the level or the play
+  // state changes, so the tick reads the remaining time through a ref instead
+  // of taking `time` as a dependency
+  const timeRef = useRef(time);
+
   useEffect(() => {
-    // If the time is less than 30 seconds, change the background color
-    // to red to alert the player
-    if (time < 30) {
-      const body = document.querySelector("body");
+    timeRef.current = time;
+  }, [time]);
 
-      if (body !== null) {
-        body.classList.add("bg-error");
-      }
-    }
+  // If less than 30 seconds are left, change the background color to red to
+  // alert the players
+  useEffect(() => {
+    document.body.classList.toggle("bg-error", time < 30);
+  }, [time]);
 
-    if (time < 0) {
-      if (beep) {
-        const audio = new Audio("/beep.mp3");
-        audio.play();
-      }
-
-      if (level < 9) {
-        setLevel(level + 1);
-        // setTime() is handled in a separate useEffect
-      }
-
-      if (level === 9) {
-        setPaused(true);
-      }
-
-      // Flash the background color to tell inaudible users that the time is up
-      // using a custom animation class defined in tailwind.config.ts
-      const body = document.querySelector("body");
-
-      if (body !== null) {
-        body.classList.remove("bg-error");
-        body.classList.add("animate-invert-flicker");
-        setTimeout(() => {
-          body.classList.remove("animate-invert-flicker");
-        }, 1000);
-      }
-    }
-
+  useEffect(() => {
     if (paused) {
       return;
     }
 
     const timer = setInterval(() => {
-      setTime((prevTime) => prevTime - 1);
+      if (timeRef.current > 0) {
+        timeRef.current -= 1;
+        setTime(timeRef.current);
+        return;
+      }
+
+      // The level is over
+      if (beep) {
+        const audio = new Audio("/beep.mp3");
+        audio.play();
+      }
+
+      flashBackground();
+
+      if (level < maxLevel) {
+        goToLevel(level + 1);
+      } else {
+        setPaused(true);
+      }
     }, 1000);
 
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [time, paused]);
+  }, [paused, level]);
 
-  // Separate useEffect to update sb when level changes
-  // This is necessary because the sb can also be changed by PrevNextButton
-  // and not only by the timer
-  useEffect(() => {
+  function goToLevel(nextLevel: number) {
+    setLevel(nextLevel);
     setTime(initialTime);
-    setSb(calculateSb(level, initialSb));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [level]);
+  }
 
   return (
     <>
@@ -89,13 +83,13 @@ export default function Home() {
           <div className="self-center flex flex-row gap-8">
             <PrevNextButton
               currentLevel={level}
-              setLevel={setLevel}
+              onLevelChange={goToLevel}
               type={"prev"}
             />
             <PlayPauseButton setPaused={setPaused} paused={paused} />
             <PrevNextButton
               currentLevel={level}
-              setLevel={setLevel}
+              onLevelChange={goToLevel}
               type={"next"}
             />
           </div>
@@ -106,6 +100,18 @@ export default function Home() {
       </div>
     </>
   );
+}
+
+// Flash the background color to tell inaudible users that the time is up
+// using a custom animation class defined in tailwind.config.ts
+function flashBackground() {
+  const body = document.body;
+
+  body.classList.remove("bg-error");
+  body.classList.add("animate-invert-flicker");
+  setTimeout(() => {
+    body.classList.remove("animate-invert-flicker");
+  }, 1000);
 }
 
 function calculateSb(level: number, initialSb: number) {

@@ -1,13 +1,11 @@
-import { Dispatch, SetStateAction } from "react";
-
 interface Props {
   type: "prev" | "next";
   currentLevel: number;
-  setLevel: Dispatch<SetStateAction<number>>;
+  onLevelChange: (level: number) => void;
 }
 
 export default function PrevNextButton(props: Props) {
-  const { type, currentLevel, setLevel } = props;
+  const { type, currentLevel, onLevelChange } = props;
   const minLvel = 1;
   const maxLevel = 9;
   const disabled =
@@ -22,7 +20,9 @@ export default function PrevNextButton(props: Props) {
           return;
         }
 
-        return setLevel(type === "prev" ? currentLevel - 1 : currentLevel + 1);
+        return onLevelChange(
+          type === "prev" ? currentLevel - 1 : currentLevel + 1,
+        );
       }}
     >
       <svg
