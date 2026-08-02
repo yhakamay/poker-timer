@@ -35,25 +35,26 @@ Then open <http://localhost:3000>.
 ## How it works
 
 Everything lives in a single client component, [`src/app/page.tsx`](src/app/page.tsx),
-which owns all the state — `time`, `sb`, `level`, `paused`:
+which owns all the state — `time`, `level`, `paused`, `settings`:
 
-- **9 blind levels**, 10 minutes each. Both are constants at the top of
-  `page.tsx` (`initialTime`, `initialSb`) — change them there.
-- **Blind schedule** is the `calculateSb` function at the bottom of `page.tsx`.
-  It multiplies the initial small blind by `1, 2, 3, 5, 10, 15, 20, 40, 80`.
-  BB is always 2×SB, computed in [`sb-bb.tsx`](src/components/sb-bb.tsx).
+- **9 blind levels by default**, 10 minutes each, small blinds
+  `100, 200, 300, 500, 1000, 1500, 2000, 4000, 8000`. BB is always 2×SB.
+  The defaults live in [`src/lib/settings.ts`](src/lib/settings.ts).
+- **Everything is editable** in the settings dialog (gear icon, a native
+  `<dialog>`): minutes per level, and the small blind for each level —
+  add or remove levels freely. Saved settings persist in `localStorage`.
+- **The game survives a reload.** The current level and remaining time are
+  saved as they change and restored (paused) on the next visit.
 - **Under 30 seconds** the background turns red (`bg-error`).
 - **At zero** it plays a triple beep generated with the Web Audio API (no
   audio asset), vibrates on devices that support it, flashes the screen with
   the custom `invert-flicker` animation from
   [`globals.css`](src/app/globals.css), and advances to the next level.
-  After level 9 it pauses instead.
+  After the last level it pauses instead.
 - **The clock doesn't drift.** While running, the remaining time is recomputed
   every 250 ms from a deadline timestamp, so it stays correct even when the
   browser throttles timers in a background tab.
 - **Prev/next buttons** jump levels manually and reset the clock either way.
-
-State is in-memory only — a page refresh restarts at level 1.
 
 ## Stack
 

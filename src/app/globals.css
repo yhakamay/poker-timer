@@ -100,6 +100,20 @@
     pointer-events: none;
   }
 
+  .input {
+    height: 2.5rem;
+    padding-inline: 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--muted);
+    background: transparent;
+    color: inherit;
+  }
+
+  .input:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+  }
+
   /* Rolling countdown digit: a 0-9 strip, one digit tall, shifted per value */
   .digit {
     display: inline-block;

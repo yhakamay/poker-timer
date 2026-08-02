@@ -1,20 +1,21 @@
 interface Props {
   type: "prev" | "next";
   currentLevel: number;
+  maxLevel: number;
   onLevelChange: (level: number) => void;
 }
 
 export default function PrevNextButton(props: Props) {
-  const { type, currentLevel, onLevelChange } = props;
-  const minLvel = 1;
-  const maxLevel = 9;
+  const { type, currentLevel, maxLevel, onLevelChange } = props;
+  const minLevel = 1;
   const disabled =
-    (currentLevel === minLvel && type === "prev") ||
+    (currentLevel === minLevel && type === "prev") ||
     (currentLevel === maxLevel && type === "next");
 
   return (
     <button
       className={`btn btn-ghost ${disabled ? "btn-disabled" : ""}`}
+      aria-label={type === "prev" ? "Previous level" : "Next level"}
       onClick={function () {
         if (disabled) {
           return;
