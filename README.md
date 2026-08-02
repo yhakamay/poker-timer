@@ -54,11 +54,29 @@ State is in-memory only — a page refresh restarts at level 1.
 
 ## Stack
 
-Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS 3 · daisyUI 5
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 3 · daisyUI 5
 
 daisyUI 5 officially targets Tailwind 4, but it works against Tailwind 3 here
-and is loaded the v3 way — as a plugin in `tailwind.config.ts`. Keep that in
-mind before upgrading either one; they need to move together.
+and is loaded the v3 way — as a plugin in `tailwind.config.ts`. Both are pinned
+deliberately; see [Pinned dependencies](#pinned-dependencies) before bumping
+either.
+
+## Pinned dependencies
+
+Three packages are held back on purpose. Each was tested and rejected:
+
+- **tailwindcss — stays on 3.x.** v4 moved the PostCSS plugin to
+  `@tailwindcss/postcss`, so a plain version bump fails the build outright.
+  Migrating means updating `postcss.config.mjs`, rewriting `globals.css` to the
+  CSS-first config, and re-registering daisyUI via `@plugin`.
+- **daisyui — stays on 5.0.9.** 5.5.14 builds green and passes lint and
+  typecheck, but silently breaks the UI on Tailwind 3: the countdown digits stop
+  rendering and `btn-primary` loses its color. CI cannot catch this — verify in
+  a browser if you bump it.
+- **eslint-config-next — stays on 15.x** while Next is on 16. v16 ships native
+  flat config (drop `FlatCompat`, import `eslint-config-next/core-web-vitals`
+  directly) but also enables `react-hooks/set-state-in-effect`, which flags the
+  two `setState`-in-effect calls in `page.tsx`. Bump it alongside that refactor.
 
 ## Deploy
 
