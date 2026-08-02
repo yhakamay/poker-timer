@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+# The job only checks out the repo and runs local npm scripts.
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
