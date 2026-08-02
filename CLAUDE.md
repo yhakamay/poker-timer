@@ -44,6 +44,9 @@ Before calling a change done, run `lint`, `typecheck`, and `build`.
   `maxLevel` in `prev-next-button.tsx`, and the nine hand-written `<li>`
   elements in `blind-level.tsx`. Changing the schedule means touching all three.
 - **`calculateSb` throws** on any level outside 1–9 rather than clamping.
-- `npm audit` reports 3 high advisories from `postcss`/`sharp` bundled inside
-  `next`. Not actionable here; they clear on the next Next.js release. Do not
-  run `npm audit fix --force` — it downgrades Next to 9.x.
+- **`postcss` and `sharp` are forced forward by npm `overrides`.** `next` pins
+  `postcss` to 8.4.31 and caps `sharp` at `^0.34.5`, both with open advisories;
+  the overrides in `package.json` are what keep `npm audit` at zero. The
+  `postcss` override is `"$postcss"`, so it tracks the devDependency range —
+  keep that range at or above the patched floor. Do not run
+  `npm audit fix --force` — it downgrades Next to 9.x.

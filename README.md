@@ -85,7 +85,9 @@ Dependabot opens npm PRs weekly ([`.github/dependabot.yml`](.github/dependabot.y
 and CI runs lint + typecheck + build on every PR
 ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
-`npm audit` currently reports 3 high-severity advisories in `postcss` and
-`sharp` — both are vendored inside `next` itself, so they clear when Next.js
-ships a patched release. npm's only offered "fix" is downgrading Next to 9.x;
-don't take it.
+`next` pins `postcss` to an old exact version (8.4.31) and caps `sharp` at
+`^0.34.5`, both of which carry open advisories. `package.json` forces them
+forward with npm `overrides` (`postcss: "$postcss"`, `sharp: "^0.35.3"`), which
+is what keeps `npm audit` at zero. Don't drop those entries when bumping Next —
+re-check whether Next has caught up first. And never run `npm audit fix --force`
+here; it downgrades Next to 9.x.
