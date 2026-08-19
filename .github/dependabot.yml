@@ -4,3 +4,18 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      # react and react-dom must move together: react-dom's peer range pins the
+      # exact react version, so a PR bumping only one of them fails npm install.
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+    ignore:
+      # Next.js rejects the TypeScript 7 compiler API ("TypeScript 7.x does not
+      # provide the compiler API required by Next.js"). Drop this once Next
+      # supports it; 6.x is still allowed through.
+      - dependency-name: "typescript"
+        versions: [">=7"]

@@ -17,11 +17,19 @@ export const metadata: Metadata = {
   title: "Poker Timer",
   description: "A simple poker timer.",
   generator: "Next.js",
+  icons: {
+    apple: "/icon-192.png",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Poker Timer",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
-  colorScheme: "dark light",
-  themeColor: "#171717",
+  colorScheme: "dark",
+  themeColor: "#0a0b0d",
 };
 
 export default function RootLayout({

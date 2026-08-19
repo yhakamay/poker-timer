@@ -1,21 +1,185 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Short and wide — a phone propped on its side, or a laptop with little
+   vertical room. Stacking everything does not fit there, so the board goes
+   side by side instead. */
+@custom-variant squat (@media (max-height: 640px) and (min-aspect-ratio: 4/3));
+
+/* Dark only, on purpose: this is a board meant to be read across a table in a
+   dimly lit room. There is no light theme to keep in sync. */
+@theme {
+  --color-base: #0a0b0d;
+  --color-panel: #131519;
+  --color-line: #23272f;
+  --color-ink: #f2f4f7;
+  --color-dim: #7f8794;
+  --color-accent: #f0b429;
+  --color-danger: #ff4d4f;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --animate-invert-flicker: invert-flicker 0.4s infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes invert-flicker {
+  0%,
+  100% {
+    filter: invert(0);
+  }
+  50% {
+    filter: invert(1);
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+/* Layered so utility classes can still override these (Tailwind 4 puts
+   utilities in a native cascade layer, which an unlayered rule would beat) */
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--color-base);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+}
+
+@layer components {
+  /* Small uppercase caption used for every panel heading on the board */
+  .label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-dim);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 3.5rem;
+    min-width: 3.5rem;
+    padding-inline: 1.25rem;
+    border: 1px solid var(--color-line);
+    border-radius: 0.75rem;
+    background: var(--color-panel);
+    color: var(--color-ink);
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      color 0.15s ease,
+      transform 0.1s ease;
+  }
+
+  .btn:hover:not(:disabled) {
+    border-color: color-mix(in oklab, var(--color-accent) 55%, transparent);
+  }
+
+  .btn:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .btn:disabled {
+    opacity: 0.25;
+    cursor: default;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--color-dim);
+  }
+
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--color-panel);
+    color: var(--color-ink);
+  }
+
+  /* The primary action on the board — deliberately the only gold fill */
+  .btn-accent {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #14161a;
+  }
+
+  .btn-accent:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--color-accent) 88%, white);
+    border-color: color-mix(in oklab, var(--color-accent) 88%, white);
+  }
+
+  .input {
+    height: 2.75rem;
+    padding-inline: 0.75rem;
+    border: 1px solid var(--color-line);
+    border-radius: 0.5rem;
+    background: var(--color-base);
+    color: var(--color-ink);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .input:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+
+  /* The headline number. Bounded by width so it never wraps, and by height so
+     the blinds and controls under it stay on screen. */
+  .timer-digits {
+    font-size: clamp(3.5rem, min(32vw, 30vh), 20rem);
+  }
+
+  /* Side by side: the number gets the height back but now shares the width,
+     so the vw term has to come down to leave room for the panels beside it */
+  @media (max-height: 640px) and (min-aspect-ratio: 4/3) {
+    .timer-digits {
+      font-size: clamp(3rem, min(18vw, 40vh), 20rem);
+    }
+  }
+
+  /* Under-30s alert. A vignette rather than a flat red fill: the board stays
+     readable while the room still notices from the corner of its eye. */
+  .danger-glow {
+    background: radial-gradient(
+      ellipse at center,
+      transparent 30%,
+      color-mix(in oklab, var(--color-danger) 22%, transparent) 100%
+    );
+  }
+
+  /* A 0-9 strip one digit tall; shifting it up by `value` em rolls to that
+     digit. Cheap, GPU-friendly, and reads as a real flip-clock from afar. */
+  .digit {
+    display: inline-block;
+    height: 1em;
+    overflow: hidden;
+    line-height: 1;
+  }
+
+  .digit > span {
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .digit > span > span {
+    display: block;
+    height: 1em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .digit > span {
+    transition: none;
+  }
 }
