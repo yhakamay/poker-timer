@@ -9,17 +9,18 @@ import PrevNextButton from "@/components/prev-next-button";
 import SettingsDialog from "@/components/settings-dialog";
 import Timer from "@/components/timer";
 import {
+  deriveLevelState,
+  loadGame,
+  remainingSeconds,
+  saveGame,
+} from "@/lib/game";
+import {
   defaultSettings,
   loadSettings,
   saveSettings,
   Settings,
 } from "@/lib/settings";
 import { useCallback, useEffect, useRef, useState } from "react";
-
-const GAME_KEY = "poker-timer:game";
-
-// How long before the end of a level the board switches to its alert look
-const dangerSeconds = 30;
 
 export default function Home() {
   const [settings, setSettings] = useState(defaultSettings);
@@ -28,14 +29,11 @@ export default function Home() {
   const [paused, setPaused] = useState(true);
   const [flashing, setFlashing] = useState(false);
 
-  const levelSeconds = settings.levelMinutes * 60;
-  const maxLevel = settings.smallBlinds.length;
-  // The blinds are fully determined by the level, so derive them during render
-  // instead of keeping a second copy in state
-  const sb = settings.smallBlinds[level - 1];
-  const nextSb = level < maxLevel ? settings.smallBlinds[level] : null;
-  const progress = (levelSeconds - time) / levelSeconds;
-  const danger = time < dangerSeconds;
+  // `sb`, `nextSb`, `maxLevel` etc. are fully determined by `settings` and the
+  // current level, so derive them during render instead of keeping a second
+  // copy in state
+  const { maxLevel, levelSeconds, sb, nextSb, progress, danger } =
+    deriveLevelState(settings, level, time);
 
   // While running, the source of truth for the remaining time is a deadline
   // timestamp, not a decrementing counter: each tick recomputes the remaining
@@ -86,7 +84,7 @@ export default function Home() {
 
     // Freeze the displayed time at the exact remaining amount
     if (endAtRef.current !== null) {
-      setTime(remainingSeconds(endAtRef.current));
+      setTime(remainingSeconds(endAtRef.current, Date.now()));
     }
     endAtRef.current = null;
     setPaused(true);
@@ -120,7 +118,7 @@ export default function Home() {
     if (!restoredRef.current) {
       return;
     }
-    localStorage.setItem(GAME_KEY, JSON.stringify({ level, remaining: time }));
+    saveGame({ level, remaining: time });
   }, [level, time]);
 
   // Offline support: the service worker caches the app shell. Registered only
@@ -205,7 +203,7 @@ export default function Home() {
         return;
       }
 
-      const remaining = remainingSeconds(endAt);
+      const remaining = remainingSeconds(endAt, Date.now());
       setTime(remaining);
       if (remaining > 0) {
         return;
@@ -299,45 +297,6 @@ export default function Home() {
       />
     </div>
   );
-}
-
-function remainingSeconds(endAt: number) {
-  return Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
-}
-
-// Reads the saved game and validates it against the active settings; anything
-// out of range (e.g. the schedule shrank) starts a fresh game instead
-function loadGame(
-  settings: Settings,
-): { level: number; remaining: number } | null {
-  try {
-    const raw = localStorage.getItem(GAME_KEY);
-    if (!raw) {
-      return null;
-    }
-
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null) {
-      return null;
-    }
-
-    const { level, remaining } = parsed as Record<string, unknown>;
-    const seconds = settings.levelMinutes * 60;
-    if (
-      !Number.isInteger(level) ||
-      (level as number) < 1 ||
-      (level as number) > settings.smallBlinds.length ||
-      !Number.isInteger(remaining) ||
-      (remaining as number) < 0 ||
-      (remaining as number) > seconds
-    ) {
-      return null;
-    }
-
-    return { level: level as number, remaining: remaining as number };
-  } catch {
-    return null;
-  }
 }
 
 // A short triple beep generated with the Web Audio API — no audio asset needed
